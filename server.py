@@ -3,10 +3,7 @@ import os
 import tkinter as tk
 import winreg
 from io import BytesIO
-from pynput.keyboard import Key, Listener
-
-HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
-PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
+from pynput.keyboard import Key, Listener     
 
 def sendData(sock, msg):
     sock.sendall(bytes(msg, "utf8"))
@@ -153,7 +150,7 @@ def registry(sock, lines):
             try:
                 os.system('wmic process call create \'regedit.exe /s fileReg.reg\'')
                 sendData(sock, "Sửa thành công\n")
-            except:
+            except OSError:
                 sendData(sock, "Sửa thất bại\n")
         elif (s == "SEND"):
             option = receiveLine(sock, lines)
@@ -185,7 +182,6 @@ def registry(sock, lines):
             #print(s)
         else:
             return
-
 
 def printKeys(sock, keys):
     data = ""
@@ -343,7 +339,10 @@ def application(sock, lines):
                     test = False
         else:
             break
-            
+
+hostname = socket.gethostname()
+HOST = socket.gethostbyname(hostname)
+PORT = 65432   
 
 def buttonServer_click():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -351,7 +350,7 @@ def buttonServer_click():
         s.listen()
         conn, addr = s.accept()
         try:
-            print('Connected by', addr)
+            #print('Connected by', addr)
             lines = []
             str = ""
             while True:
@@ -369,11 +368,10 @@ def buttonServer_click():
                 elif (str == "APPLICATION"):
                     application(conn, lines)
                 else: # str == "QUIT"
-                    conn.close()
-                    s.close()
+                    conn.shutdown(socket.SHUT_RDWR)
+                    break
         except KeyboardInterrupt:
-            conn.close()
-            s.close()
+            conn.shutdown(socket.SHUT_RDWR)
 
 def run_server():
     window = tk.Tk()
