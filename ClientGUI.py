@@ -625,5 +625,5 @@ def clientGUI():
     Button(root, text = "Quit", command = Quit).pack(side = TOP,fill = X, pady = 2)
     root.mainloop()
 
-registryGUI()
+clientGUI()
 
