@@ -1,6 +1,5 @@
-def listProcess():
-    process = os.popen('wmic process get Name, ProcessId, ThreadCount').read() # process is a string 
-    lines = process.split('\n')
+def handleString(process):
+    lines = process.split('\n') # process is a string
     list = []
     idList = -1
     for i in range (2, len(lines), 2):
@@ -9,6 +8,5 @@ def listProcess():
         list.append([])
         idList += 1
         for j in comp:    
-            #j = [q for q in j if (q != ' ')]
             list[idList].append(j)
         print(list[idList])
