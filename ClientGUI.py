@@ -459,13 +459,12 @@ def registryGUI():
     ValueEntry = Entry(topFrame4,width = 15, textvariable=ValueVar).pack(side = LEFT, padx = 2)
     submittedValue = ValueVar.get()
     optionsData = ["String", "Binary","DWORD","QWORD","Multi-String", "Expandable String"]
-    DataChoosen = ttk.Combobox(topFrame3, value = optionsFunc)
+    DataChoosen = ttk.Combobox(topFrame4, value = optionsData)
     clicked2 = StringVar()
     clicked2.set("Chọn kiểu dữ liệu")
-    DataChoosen.pack(side = TOP,fill = X, pady = 2)
-    DataChoosen.current(0)
+    DataChoosen.pack(side = LEFT, padx = 2)
     #Gởi
-    def goi():
+    def goi(event):
         sclient.sendall(bytes("SEND \n", "utf8"))
         sig=''
         T=''
