@@ -7,25 +7,29 @@ import json
 from io import BytesIO
 import os
 from tkinter import filedialog
-from Client import*
 from PIL import ImageTk,Image
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-sclient = None
 check = False
+try:
+    sclient = socket(AF_INET, SOCK_STREAM)
+except socket.error:
+    messagebox.showerror("Error", "Lỗi không thể tạo socket")
 
 def Line(lines):
     if (len(lines) > 0):
         res = lines[0]
         lines.pop(0)
-        res = res.decode("utf8")
+        res = res.decode()
         res = res.replace("\n","")
         return res
     else:
         return "QUIT"
 
 def receive(lines):
+    global sclient
     buffer = BytesIO()
+    lines =[]
     try:
         resp = sclient.recv(100)       
     except:
@@ -50,15 +54,23 @@ def receiveLine(lines):
     receive(lines)
     return Line(lines)
 
-def receiveJson(data):
-    return
+def receiveJson(jsonData):
+    global sclient
+    jsonHeader = ''
+    jsonData = ''
+    jsonHeader = receiveLine(jsonHeader)
+    decodeHeader = json.loads(jsonHeader)
+    print(decodeHeader)
+    jsonData = receiveLine(jsonData)
+    decodeData = json.loads(jsonData)
+    return decodeData
+    
+
 def connectServer(IPVar):
     submittedIP = IPVar.get()
+    global check
+    global sclient
     try:
-        try:
-            sclient = socket(AF_INET, SOCK_STREAM)
-        except socket.error:
-            messagebox.showerror("Error", "Lỗi không thể tạo socket")
         ADDR = (submittedIP, 65432)
         sclient.connect(ADDR)
         check = True
@@ -68,7 +80,11 @@ def connectServer(IPVar):
     if (check == True):
         messagebox.showinfo("Info", "Kết nối đến server thành công")
 def screenServer():
-    return 
+    data =''
+    data = receiveJson(data)
+    print(data)
+    img = Image.open(BytesIO(data))
+    return img
 
 #Process Running
 
@@ -173,6 +189,8 @@ def ProcessGUI():
     treev.heading("3", text ="Count Thread")
     root.mainloop()
 def ProcessRunning():
+    global check
+    global sclient
     if (not check):
         messagebox.showerror("Error", "Chưa kết nối đến server")
         return 
@@ -283,6 +301,8 @@ def AppGUI():
     treev.heading("3", text ="Count Thread")
     root.mainloop()
 def AppRunning():
+    global check
+    global sclient
     if (not check):
         messagebox.showerror("Error", "Chưa kết nối đến server")
         return 
@@ -300,14 +320,15 @@ def xoa(T):
     return
 
 ##In Phim Keystroke
-def inPhim(T):
-    sclient.sendall(bytes("INPHIM \n", "utf8"))
-    data = receiveLine()
+'''def inPhim(T):
+    sclient.sendall(bytes("PRINT", "utf8"))
+    data =''
+    data = receiveLine(data)
     T.configure(state="normal")
     T.insert(END,data)
     T.configure(state="disabled")
     return
-
+'''
 ##UnHook Keystroke
 def unHook():
     sclient.sendall(bytes("UNHOOK \n", "utf8"))
@@ -328,6 +349,14 @@ def hook():
 
 ##Keystroke   
 def KeystrokeGUI():
+    def inPhim():
+        sclient.sendall(bytes("PRINT", "utf8"))
+        data =''
+        data = receiveLine(data)
+        T.configure(state="normal")
+        T.insert(END,data)
+        T.configure(state="disabled")
+        return
     root = Tk()
     root.title("keystroke")
     root.geometry("350x270") 
@@ -335,7 +364,7 @@ def KeystrokeGUI():
     topFrame = Frame(root)
     topFrame.pack(side = TOP, fill = X )
     T = Text(root, height = 15, width = 52)
-    inPhimFunc = partial(inPhim,T)
+    inPhimFunc = partial(inPhim)
     Button(topFrame, text = "Hook", width = 10, command = hook).pack(side = LEFT, padx = 5)
     Button(topFrame, text = "UnHook", width = 10, command = unHook).pack(side = LEFT, padx = 5)
     Button(topFrame, text = "In phím", width = 10, command = inPhimFunc).pack(side = LEFT, padx = 5)
@@ -343,10 +372,11 @@ def KeystrokeGUI():
     T.pack()
     root.mainloop()
 def Keystroke():
+    global check
     if (not check):
         messagebox.showerror("Error", "Chưa kết nối đến server")
         return 
-    sclient.sendall(bytes("KEYSTROKE", "utf8"))
+    sclient.sendall(bytes("KEYLOG", "utf8"))
     KeystrokeGUI()
 
 
@@ -400,7 +430,46 @@ def fixmsg(self, s):
     if s=='':
         return 'None'
     return s
-
+def option(self,ch):
+        if ch in self.options[0:3:2]:
+        	self.drop1.grid(row=0, column=0, columnspan=3, sticky="nsew")
+        	self.path.grid(row=1, column=0, columnspan=3, sticky="nsew")
+        	self.Nvalue.grid(row=2, column=0, sticky="nsew")
+        	self.Value.grid(row=2, column=1, sticky="nsew")
+        	self.drop2.grid(row=2, column=2, sticky="nsew")    	
+        	self.space.grid(row=3, column=0)    	
+        	self.TEXT.grid(row=4, column=0, columnspan=3)
+        	self.drop2.grid_forget()
+        	self.Value.grid_forget()
+        elif ch == self.options[1]:
+        	self.drop1.grid(row=0, column=0, columnspan=3, sticky="nsew")
+        	self.path.grid(row=1, column=0, columnspan=3, sticky="nsew")
+        	self.Nvalue.grid(row=2, column=0, sticky="nsew")
+        	self.Value.grid(row=2, column=1, sticky="nsew")
+        	self.drop2.grid(row=2, column=2, sticky="nsew")    	
+        	self.space.grid(row=3, column=0)    	
+        	self.TEXT.grid(row=4, column=0, columnspan=3)
+        elif ch == self.options[3]:
+        	self.drop1.grid(row=0, column=0, columnspan=3, sticky="nsew")
+        	self.path.grid(row=1, column=0, columnspan=3, sticky="nsew")
+        	self.Nvalue.grid(row=2, column=0, sticky="nsew")
+        	self.Value.grid(row=2, column=1, sticky="nsew")
+        	self.drop2.grid(row=2, column=2, sticky="nsew")    	
+        	self.space.grid(row=3, column=0)    	
+        	self.TEXT.grid(row=4, column=0, columnspan=3)
+        	self.drop2.grid_forget()
+        	self.Value.grid_forget()
+        else:
+            self.drop1.grid(row=0, column=0, columnspan=3, sticky="nsew")
+            self.path.grid(row=1, column=0, columnspan=3, sticky="nsew")
+            self.Nvalue.grid(row=2, column=0, sticky="nsew")
+            self.Value.grid(row=2, column=1, sticky="nsew")
+            self.drop2.grid(row=2, column=2, sticky="nsew")     
+            self.space.grid(row=3, column=0)        
+            self.TEXT.grid(row=4, column=0, columnspan=3)
+            self.Nvalue.grid_forget()
+            self.drop2.grid_forget()
+            self.Value.grid_forget()
     
 
 def registryGUI():
@@ -434,10 +503,7 @@ def registryGUI():
     def comboclick(event):
         ch = FuncChoosen.get()
         if (ch == optionsFunc[0]):
-            ValueEntry.pack_forget()
-            FuncChoosen.pack_forget()
-            '''elif (ch == optionsFunc[1]):
-                elif (ch == optionsFunc[2]):'''
+            return
 
     clicked1 = StringVar()
     clicked1.set("Chọn chức năng")
@@ -529,6 +595,8 @@ def registryGUI():
     root.mainloop()
    
 def Registry():
+    global check
+    global sclient
     if (not check):
         messagebox.showerror("Error", "Chưa kết nối đến server")
         return 
@@ -554,7 +622,7 @@ def save(img):
 
 ##Take
 def take(root,img):
-    img = screenServer()
+    img = screenServer(img)
     img1 = img.resize((320,230), Image.ANTIALIAS)
     img2 = ImageTk.PhotoImage(img1)
     Label(root, image=img2).pack(side = BOTTOM, fill = X)
@@ -566,31 +634,37 @@ def picGUI():
     root.title("Pic")
     root.geometry("350x270") 
     root.resizable(0, 0)
-    img = screenServer()
+    screenServer()
+    '''img = None
+    img = screenServer(img)'''
     topFrame = Frame(root)
     topFrame.pack(side = TOP, fill = X )
-    saveFunc = partial(save,img)
-    takeFunc = partial(take,root,img)
-    Button(topFrame, text = "Take", width = 20, command = takeFunc).pack(side = LEFT, padx = 10)
-    Button(topFrame, text = "Save", width = 20, command = saveFunc).pack(side = LEFT, padx = 5)
-    temp= img.resize((320,230), Image.ANTIALIAS)
+    '''saveFunc = partial(save,img)
+    takeFunc = partial(take,root,img)'''
+    Button(topFrame, text = "Take", width = 20, command = root.destroy).pack(side = LEFT, padx = 10)
+    Button(topFrame, text = "Save", width = 20, command = root.destroy).pack(side = LEFT, padx = 5)
+    '''temp= img.resize((320,230), Image.ANTIALIAS)
     img1 = ImageTk.PhotoImage(temp)
-    Label(root, image=img1).pack(side = BOTTOM, fill = X)
+    Label(root, image=img1).pack(side = BOTTOM, fill = X)'''
     root.mainloop()
 def PrintScreen():
+    global check
+    global sclient
     if (not check):
         messagebox.showerror("Error", "Chưa kết nối đến server")
         return
-    sclient.sendall(bytes("TAKEPIC \n", "utf8"))
+    sclient.sendall(bytes("TAKEPIC", "utf8"))
     picGUI()
 
 
 #Shut Down
 def ShutDown():
+    global check
+    global sclient
     if (not check):
         messagebox.showerror("Error", "Chưa kết nối đến server")
         return 
-    sclient.sendall(bytes("SHUTDOWN \n", "utf8"))
+    sclient.sendall(bytes("SHUTDOWN", "utf8"))
     sclient.close()
     sclient = None
     check = False
@@ -598,8 +672,10 @@ def ShutDown():
 
 #Quit
 def Quit():
+    global check
+    global sclient
     if (check):
-        sclient.sendall(bytes("QUIT \n", "utf8"))
+        sclient.sendall(bytes("QUIT", "utf8"))
         sclient.close()
     return
 
