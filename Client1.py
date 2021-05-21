@@ -80,7 +80,7 @@ class ProcessGUI(object):
         self.treev.heading("1", text ="Name Process")
         self.treev.heading("2", text ="ID Process")
         self.treev.heading("3", text ="Count Thread")
-        self.master1.protocol("WM_DELETE_WINDOW", self.closeProcess)
+        self.master.protocol("WM_DELETE_WINDOW", self.closeProcess)
         self.master.mainloop()
     
     #Close ProcessGUI
@@ -102,8 +102,8 @@ class ProcessGUI(object):
         ID = self.IDKillEntry.get()
         print(ID)
         sclient.sendall(bytes(ID, "utf8"))
-        signal = sclient.recv(1)
-        if (signal !=  b'0'):
+        signal = receive()
+        if (signal != '0'):
             messagebox.showinfo("Info", "Đã diệt process")
             return True
         else:
@@ -132,7 +132,7 @@ class ProcessGUI(object):
         sclient.sendall(bytes("STARTID", "utf8"))
         sclient.sendall(bytes(ID, "utf8"))
         signal = receive()
-        if (signal != b'0'):
+        if (signal != '0'):
             messagebox.showinfo("Info","Process đã được bật")
             return True
         else:
@@ -160,7 +160,6 @@ class ProcessGUI(object):
         sclient.sendall(bytes("XEM", "utf8"))
         data =''
         data = receive()
-        #print(data)
         lines = data.split('\n') 
         list = []
         idList = -1
@@ -171,7 +170,6 @@ class ProcessGUI(object):
             idList += 1
             for j in comp:    
                 list[idList].append(j)
-            #print(list[idList])
         cnt = 0
         for record in list:
             self.treev.insert("", 'end', iid = cnt, text ="", 
@@ -215,7 +213,7 @@ class AppGUI(object):
         self.treev.heading("1", text ="Name Application")
         self.treev.heading("2", text ="ID Application")
         self.treev.heading("3", text ="Count Thread")
-        self.master1.protocol("WM_DELETE_WINDOW", self.closeApp)
+        self.master.protocol("WM_DELETE_WINDOW", self.closeApp)
         self.master.mainloop()
     
     #Close AppGUI
@@ -234,10 +232,10 @@ class AppGUI(object):
     def killAppClick(self):
         global sclient
         ID = self.IDKillEntry.get()
-        sclient.sendall(bytes("STARTID", "utf8"))
+        sclient.sendall(bytes("KILLID", "utf8"))
         sclient.sendall(bytes(ID, "utf8"))
-        signal = sclient.recv(1)
-        if (signal != b'0'):
+        signal = receive()
+        if (signal != '0'):
             messagebox.showinfo("Info", "Đã diệt application")
             return True
         else:
@@ -262,10 +260,10 @@ class AppGUI(object):
     def startAppClick(self):
         global sclient
         ID = self.IDStartEntry.get()
-        sclient.sendall(bytes("STARTID \n", "utf8"))
-        sclient.sendall(bytes(ID + "\n", "utf8"))
-        signal = sclient.recv(1)
-        if (signal != b'0'):
+        sclient.sendall(bytes("STARTID", "utf8"))
+        sclient.sendall(bytes(ID, "utf8"))
+        signal = receive()
+        if (signal != '0'):
             messagebox.showinfo("Info", "App đã được bật")
             return True
         else:
@@ -296,7 +294,7 @@ class AppGUI(object):
         lines = data.split('\n') 
         list = []
         idList = -1
-        for i in range (2, len(lines) - 4, 2):
+        for i in range (3, len(lines) - 3):
             comp = lines[i].split('  ')
             comp = [p for p in comp if (p != '' and p != ' ')]
             list.append([])
@@ -335,11 +333,11 @@ class KeystrokeGUI(object):
         Button(self.topFrame, text = "In phím", width = 10, command = self.inPhim).pack(side = LEFT, padx = 5)
         Button(self.topFrame, text = "Xoá", width = 10, command = self.xoa).pack(side = LEFT, padx = 5)
         self.T.pack()
-        self.master1.protocol("WM_DELETE_WINDOW", self.closeKeystroke)
+        self.master.protocol("WM_DELETE_WINDOW", self.closeKeystroke)
         self.master.mainloop()
     
     #Close KeystrokeGUI
-    def closeKeystoke(self):
+    def closeKeystroke(self):
         global sclient
         sclient.sendall(bytes("QUIT", "utf8"))
         self.master.destroy()
@@ -357,6 +355,8 @@ class KeystrokeGUI(object):
         sclient.sendall(bytes("PRINT", "utf8"))
         data =''
         data = receive()
+        if (data == "0"):
+            return
         self.T.configure(state="normal")
         self.T.insert(END,data)
         self.T.configure(state="disabled")
@@ -365,9 +365,9 @@ class KeystrokeGUI(object):
     #UnHook Keystroke
     def unHook(self):
         global sclient
-        sclient.sendall(bytes("UNHOOK \n", "utf8"))
-        signal = sclient.recv(1)
-        if (signal != b'0'):
+        sclient.sendall(bytes("UNHOOK", "utf8"))
+        signal = receive()
+        if (signal != '0'):
             return True
         else:
             return False
@@ -375,9 +375,9 @@ class KeystrokeGUI(object):
     ##Hook Keystroke
     def hook(self):
         global sclient
-        sclient.sendall(bytes("HOOK \n", "utf8"))
-        signal = sclient.recv(1)
-        if (signal != b'0'):
+        sclient.sendall(bytes("HOOK", "utf8"))
+        signal = receive()
+        if (signal != '0'):
             return True
         else:
             return False
@@ -445,7 +445,7 @@ class RegistryGUI(object):
         self.topFrame6.pack(side = TOP, fill = X, pady = 2 )
         Button(self.topFrame6, text = "Gởi", width = 20, command = self.goi).pack(side = LEFT, padx = 10)
         Button(self.topFrame6, text = "Xoá", width = 20, command = self.xoa).pack(side = LEFT, padx = 5)
-        self.master1.protocol("WM_DELETE_WINDOW", self.closeRegistry)
+        self.master.protocol("WM_DELETE_WINDOW", self.closeRegistry)
         self.master.mainloop()
 
     #Close RegistryGUI
@@ -496,8 +496,8 @@ class RegistryGUI(object):
         sclient.sendall(bytes("REG", "utf8"))
         text = str.encode(self.T1.get("1.0", END))
         sclient.sendall(text)
-        signal = sclient.recv(1)
-        if (signal != b'0'):
+        signal = receive()
+        if (signal != '0'):
             messagebox.showinfo("Sửa thành công")
             return True
         else:
@@ -514,7 +514,7 @@ class RegistryGUI(object):
     #Gởi
     def fixmsg(self, s):
         if s=='':
-            return 'None'
+            return 'no'
         return s
     def goi(self):
         global sclient
@@ -546,16 +546,17 @@ class RegistryGUI(object):
             T="Expandable String"
 
         #SendReg
-        sclient.sendall(bytes(self.fixmsg(sig) + "\n", "utf8"))
-        sclient.sendall(bytes(self.fixmsg(self.LinkEntry2.get()) + "\n", "utf8"))
-        sclient.sendall(bytes(self.fixmsg(self.NameEntry.get()) + "\n", "utf8"))
-        sclient.sendall(bytes(self.fixmsg(self.ValueEntry.get()) + "\n", "utf8"))
-        sclient.sendall(bytes(self.fixmsg(T) + "\n", "utf8"))
-        signal = sclient.recv(1)
+        msg = self.fixmsg(sig) + "\n" + self.fixmsg(self.LinkEntry2.get()) + "\n" + self.fixmsg(self.NameEntry.get()) + "\n" + self.fixmsg(self.ValueEntry.get()) + "\n" + self.fixmsg(T)
+        sclient.sendall(bytes(msg, "utf8"))
+        #sclient.sendall(bytes(self.fixmsg(self.LinkEntry2.get()) + "\n", "utf8"))
+        #sclient.sendall(bytes(self.fixmsg(self.NameEntry.get()) + "\n", "utf8"))
+        #sclient.sendall(bytes(self.fixmsg(self.ValueEntry.get()) + "\n", "utf8"))
+        #sclient.sendall(bytes(self.fixmsg(T) + "\n", "utf8"))
+        signal = receive()
         s = ''
-        if (signal != b'0'):
+        if (signal != '0'):
             if (sig == "Get value"):
-                s = self.NameVar.get()  + " = " + self.ValueVar.get() + "\n"
+                s = "Value: " + signal + "\n"
             elif (sig == "Set value"):
                 s =  "Set value thành công \n"
             elif (sig == "Delete value"):
@@ -597,7 +598,7 @@ class PicGUI(object):
         self.img1= self.img.resize((320,230), Image.ANTIALIAS)
         self.img2 = ImageTk.PhotoImage(self.img1)
         Label(self.master, image = self.img2).pack(side = BOTTOM, fill = X)
-        self.master1.protocol("WM_DELETE_WINDOW", self.closePic)
+        self.master.protocol("WM_DELETE_WINDOW", self.closePic)
         self.master.mainloop()
   
     #Close PicGUI
@@ -651,7 +652,7 @@ class ClientGUI(object):
         Button(self.master, text = "Print Screen", command = self.PrintScreen).pack(side = TOP,fill = X, pady = 2)
         Button(self.master, text = "Shut down", command = self.ShutDown).pack(side = TOP,fill = X, pady = 2)
         Button(self.master, text = "Quit", command = self.Quit).pack(side = TOP,fill = X, pady = 2)
-        self.master1.protocol("WM_DELETE_WINDOW", self.Closing)
+        self.master.protocol("WM_DELETE_WINDOW", self.Closing)
         self.master.mainloop()
 
     #Close client
