@@ -107,7 +107,14 @@ class ProcessGUI(object):
         self.treev.heading("3", text ="Count Thread")
         self.master.mainloop()
     
+    #Close app or kill GUI
+    def Closing(self):
+        global sclient
+        sclient.sendall(bytes("QUIT", "utf8"))
+        self.master1.destroy()
     #Kill Process
+
+
     def killProcClick(self):
         global sclient
         sclient.sendall(bytes("KILLID", "utf8"))
@@ -126,6 +133,7 @@ class ProcessGUI(object):
         self.IDKillVar = StringVar()
         IDEntry = Entry(self.master1,width = 40, textvariable=self.IDKillVar).pack(side = LEFT, padx = 5)
         Button(self.master1, text = "Kill", width = 8, command = self.killProcClick).pack(side = LEFT)
+        self.master1.protocol("WM_DELETE_WINDOW", self.Closing)
         self.master1.mainloop()
     def killProc(self):
         global sclient
@@ -139,11 +147,12 @@ class ProcessGUI(object):
         sclient.sendall(bytes("STARTID", "utf8"))
         sclient.sendall(bytes(ID, "utf8"))
         #print(len(bytes("1","utf8")))
-        signal = sclient.recv(1).decode("utf8")
-        if (signal != "0"):
-            messagebox.showinfo("Info","Process đã được bật")
-        else:
-            messagebox.showinfo("Info","Bật process không thành công")
+        #signal = sclient.recv(1).decode("utf8")
+        #if (signal != "0"):
+        #    messagebox.showinfo("Info","Process đã được bật")
+        #else:
+        #    messagebox.showinfo("Info","Bật process không thành công")
+        self.master.quit()
         return
     def startProcGUI(self):
         self.master1 = Toplevel(self.master)
@@ -152,6 +161,7 @@ class ProcessGUI(object):
         self.IDStartVar = StringVar()
         IDEntry = Entry(self.master1,width = 40, textvariable=self.IDStartVar).pack(side = LEFT, padx = 5)
         Button(self.master1, text = "Start", width = 8, command = self.startProcClick).pack(side = LEFT)
+        self.master1.protocol("WM_DELETE_WINDOW", self.Closing)
         self.master1.mainloop()
     def startProc(self):
         global sclient
@@ -221,6 +231,12 @@ class AppGUI(object):
         self.treev.heading("3", text ="Count Thread")
         self.master.mainloop()
     
+    #Close app or kill GUI
+    def Closing(self):
+        global sclient
+        sclient.sendall(bytes("QUIT", "utf8"))
+        self.master1.destroy()
+
     #Kill App
     def killAppClick(self):
         global sclient
@@ -240,6 +256,7 @@ class AppGUI(object):
         self.IDKillVar = StringVar()
         IDEntry = Entry(self.master1,width = 40, textvariable=self.IDKillVar).pack(side = LEFT, padx = 5)
         Button(self.master1, text = "Kill", width = 8, command = self.killAppClick).pack(side = LEFT)
+        self.master1.protocol("WM_DELETE_WINDOW", self.Closing)
         self.master1.mainloop()  
     def killApp(self):
         global sclient
@@ -265,6 +282,7 @@ class AppGUI(object):
         self.IDStartVar = StringVar()
         IDEntry = Entry(self.master1,width = 40, textvariable=self.IDStartVar).pack(side = LEFT, padx = 5)
         Button(self.master1, text = "Start", width = 8, command = self.startAppClick).pack(side = LEFT)
+        self.master1.protocol("WM_DELETE_WINDOW", self.Closing)
         self.master.mainloop()
     def startApp(self):
         global sclient
