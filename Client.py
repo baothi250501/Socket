@@ -508,9 +508,9 @@ class RegistryGUI(object):
 
         #SendReg
         sclient.sendall(bytes(self.fixmsg(sig) + "\n", "utf8"))
-        sclient.sendall(bytes(self.fixmsg(self.LinkVar2.get()) + "\n", "utf8"))
-        sclient.sendall(bytes(self.fixmsg(self.NameVar.get()) + "\n", "utf8"))
-        sclient.sendall(bytes(self.fixmsg(self.ValueVar.get()) + "\n", "utf8"))
+        sclient.sendall(bytes(self.fixmsg(self.LinkEntry2.get()) + "\n", "utf8"))
+        sclient.sendall(bytes(self.fixmsg(self.NameEntry.get()) + "\n", "utf8"))
+        sclient.sendall(bytes(self.fixmsg(self.ValueEntry.get()) + "\n", "utf8"))
         sclient.sendall(bytes(self.fixmsg(T) + "\n", "utf8"))
         signal = sclient.recv(1)
         s = ''
