@@ -1,10 +1,14 @@
+BUFF_SIZE = 4096 # 4 KiB
+
 def recvall(sock):
-    BUFF_SIZE = 4096 # 4 KiB
     data = b''
     while True:
-        part = sock.recv(BUFF_SIZE)
-        data += part
-        if len(part) < BUFF_SIZE:
-            # either 0 or end of data
+        while True:
+            part = sock.recv(BUFF_SIZE)
+            data += part
+            if len(part) < BUFF_SIZE:
+                # either 0 or end of data
+                break
+        if data:
             break
-    return data
+    return data.decode().strip()
