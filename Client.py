@@ -12,7 +12,7 @@ import os
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 check = False
-BUFSIZ = 1024
+BUFF_SIZE = 4069
 
 #Create socket
 try:
@@ -36,43 +36,15 @@ def connectServer(IPVar):
         messagebox.showinfo("Info", "Kết nối đến server thành công")
 
 #Receive Data
-def Line(lines):
-    if (len(lines) > 0):
-        res = lines[0]
-        lines.pop(0)
-        res = res.decode()
-        res = res.replace("\n","")
-        return res
-    else:
-        return "QUIT"
-
-def receive(lines):
-    global sclient
-    buffer = BytesIO()
-    lines =[]
-    try:
-        resp = sclient.recv(100)       
-    except:
-        return              
-    else:
-        buffer.write(resp)          
-        buffer.seek(0)              
-        start_index = 0             
-        for line in buffer:
-            start_index += len(line)
-            lines.append(line)       
-        if start_index:
-            buffer.seek(start_index)
-            remaining = buffer.read()
-            buffer.truncate(0)
-            buffer.seek(0)
-            buffer.write(remaining)
-        else:
-            buffer.seek(0, 2)
-
-def receiveLine(lines):
-    receive(lines)
-    return Line(lines)
+def receive():
+    data = b''
+    while True:
+        part = sclient.recv(BUFF_SIZE)
+        data += part
+        if len(part) < BUFF_SIZE:
+            # either 0 or end of data
+            break
+    return data
 
 
 ##########################################################
@@ -146,12 +118,11 @@ class ProcessGUI(object):
         ID = self.IDStartVar.get()
         sclient.sendall(bytes("STARTID", "utf8"))
         sclient.sendall(bytes(ID, "utf8"))
-        #print(len(bytes("1","utf8")))
-        #signal = sclient.recv(1).decode("utf8")
-        #if (signal != "0"):
-        #    messagebox.showinfo("Info","Process đã được bật")
-        #else:
-        #    messagebox.showinfo("Info","Bật process không thành công")
+        signal = sclient.recv(1)
+        if (signal != b'0'):
+            messagebox.showinfo("Info","Process đã được bật")
+        else:
+            messagebox.showinfo("Info","Bật process không thành công")
         self.master.quit()
         return
     def startProcGUI(self):
@@ -173,7 +144,7 @@ class ProcessGUI(object):
         global sclient
         sclient.sendall(bytes("XEM", "utf8"))
         data =''
-        data = receiveLine(data)
+        data = receive()
         print(data)
         lines = data.split('\n') 
         list = []
@@ -294,7 +265,7 @@ class AppGUI(object):
         global sclient
         sclient.sendall(bytes("XEM", "utf8"))
         data =''
-        data = receiveLine(data)
+        data = receive()
         lines = data.split('\n') 
         list = []
         idList = -1
@@ -349,7 +320,7 @@ class KeystrokeGUI(object):
         global sclient
         sclient.sendall(bytes("PRINT", "utf8"))
         data =''
-        data = receiveLine(data)
+        data = receive()
         self.T.configure(state="normal")
         self.T.insert(END,data)
         self.T.configure(state="disabled")
@@ -503,7 +474,7 @@ class RegistryGUI(object):
         return s
     def goi(self):
         global sclient
-        sclient.sendall(bytes("SEND \n", "utf8"))
+        sclient.sendall(bytes("SEND", "utf8"))
         sig=''
         T=''
         if self.FuncChoosen.get()== self.optionsFunc[0]:
