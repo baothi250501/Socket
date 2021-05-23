@@ -3,7 +3,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 from functools import partial
-from PIL import ImageTk,Image
+from PIL import ImageTk, Image
 from PIL import ImageFile
 from socket import AF_INET, socket, SOCK_STREAM
 from io import BytesIO
@@ -37,7 +37,7 @@ def connectServer(IPVar):
         return True
 
 #Receive Data
-def receive():
+def receive(): 
     data = b''
     while True:
         while True:
@@ -50,7 +50,7 @@ def receive():
             break
     return data.decode().strip()
 
-def receive1():
+def receive1(): # nhận bytes
     data = b''
     while True:
         while True:
@@ -616,17 +616,18 @@ class RegistryGUI(object):
 class PicGUI(object):
 
     #Pic Init
-    def __init__(self,master):
+    def __init__(self, master):
+        self.data = receive1()
         self.master = Tk()
         self.master.title("Pic")
         self.master.geometry("350x270") 
         self.master.resizable(0, 0)
-        self.img = pyautogui.screenshot()
         self.topFrame = Frame(self.master)
-        self.topFrame.pack(side = TOP, fill = X )
+        self.topFrame.pack(side = TOP, fill = X, pady = 2)
         Button(self.topFrame, text = "Take", width = 20, command = self.take).pack(side = LEFT, padx = 10)
         Button(self.topFrame, text = "Save", width = 20, command = self.save).pack(side = LEFT, padx = 5)
-        self.img1= self.img.resize((320,230), Image.ANTIALIAS)
+        self.img = Image.open(BytesIO(self.data))
+        self.img1 = self.img.resize((320,230), Image.ANTIALIAS)
         self.img2 = ImageTk.PhotoImage(self.img1)
         Label(self.master, image = self.img2).pack(side = BOTTOM, fill = X)
         self.master.protocol("WM_DELETE_WINDOW", self.closePic)
@@ -649,7 +650,6 @@ class PicGUI(object):
                                         ])
         if file is None:
             return
-        self.img = "test.png"
         self.img.save(file)
         file.close()
         return
@@ -661,10 +661,8 @@ class PicGUI(object):
         data = receive1()
         #print(data)
         #self.img = self.browser.get_screenshot_as_png()
-        self.img = Image.open(BytesIO(data))
-        self.img1 = self.img.resize((320,230), Image.ANTIALIAS)
-        self.img2 = ImageTk.PhotoImage(self.img1)
-        Label(self.master, image = self.img2).pack(side = BOTTOM, fill = X)
+        self.img = ImageTk.PhotoImage(Image.open(BytesIO(data)).resize((320,230), Image.ANTIALIAS))
+        Label(self.master, image = self.img).pack(side = BOTTOM, fill = X)
         return
 
 
@@ -696,7 +694,7 @@ class ClientGUI(object):
     def Closing(self):
         global sclient
         sclient.sendall(bytes("QUIT", "utf8"))
-        self.master1.destroy()
+        self.master.destroy()
 
     #Process Running Button
     def ProcessRunning(self):
@@ -706,7 +704,7 @@ class ClientGUI(object):
             messagebox.showerror("Error", "Chưa kết nối đến server")
             return 
         sclient.sendall(bytes("PROCESS", "utf8"))
-        ProcessGUI(self.master)
+        ProcessGUI(self)
 
     #App Running Button
     def AppRunning(self):
