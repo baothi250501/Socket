@@ -634,9 +634,9 @@ class PicGUI(object):
     #take
     def take(self):
         sclient.sendall(bytes("TAKE", "utf8"))
-        print("TAKE")
+        #print("TAKE")
         self.data = receive1()
-        print(1)
+        #print(1)
         self.img = Image.open(BytesIO(self.data))
         img1=self.img.resize((350, 230), Image.ANTIALIAS)
         self.img2 = ImageTk.PhotoImage(img1)

