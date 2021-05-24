@@ -416,7 +416,7 @@ class RegistryGUI(object):
         self.topFrame2 = Frame(self.master)
         self.topFrame2.pack(side = TOP, fill = X, pady = 2)
         self.scroll_bar = Scrollbar(self.topFrame2, orient=VERTICAL)
-        self.T1 = Text(self.topFrame2, height = 5, width = 26, yscrollcommand= self.scroll_bar.set)
+        self.T1 = Text(self.topFrame2,font = ('Times',12), height = 5, width = 24, yscrollcommand= self.scroll_bar.set)
         Button(self.topFrame1, text = "Browser", width = 10, command = self.browser).pack(side = LEFT)
         self.scroll_bar.pack( side = LEFT, padx = 5)
         self.scroll_bar.config(command=self.T1.yview)
