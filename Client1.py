@@ -6,17 +6,18 @@ from functools import partial
 from PIL import ImageTk, Image
 from PIL import ImageFile
 from socket import AF_INET, socket, SOCK_STREAM
+import socket
 from io import BytesIO
 import os
 import pyautogui
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 check = False
-BUFF_SIZE = 4069
+BUFF_SIZE = 1000000
 
 #Create socket
 try:
-    sclient = socket(AF_INET, SOCK_STREAM)
+    sclient = socket.socket(AF_INET, SOCK_STREAM)
 except socket.error:
     messagebox.showerror("Error", "Lỗi không thể tạo socket")
 
@@ -41,11 +42,14 @@ def receive():
     data = b''
     while True:
         while True:
-            part = sclient.recv(BUFF_SIZE)
-            data += part
-            if len(part) < BUFF_SIZE:
-                # either 0 or end of data
-                break
+            try:
+                part = sclient.recv(BUFF_SIZE)
+                data += part
+                if len(part) < BUFF_SIZE:
+                    # either 0 or end of data
+                    break
+            except socket.error:
+                return
         if data:
             break
     return data.decode().strip()
@@ -54,11 +58,14 @@ def receive1(): # nhận bytes
     data = b''
     while True:
         while True:
-            part = sclient.recv(BUFF_SIZE)
-            data += part
-            if len(part) < BUFF_SIZE:
-                # either 0 or end of data
-                break
+            try:
+                part = sclient.recv(BUFF_SIZE)
+                data += part
+                if len(part) < BUFF_SIZE:
+                    # either 0 or end of data
+                    break
+            except socket.error:
+                return
         if data:
             break
     return data
@@ -416,7 +423,7 @@ class RegistryGUI(object):
         self.topFrame2 = Frame(self.master)
         self.topFrame2.pack(side = TOP, fill = X, pady = 2)
         self.scroll_bar = Scrollbar(self.topFrame2, orient=VERTICAL)
-        self.T1 = Text(self.topFrame2,font = ('Times',12), height = 5, width = 24, yscrollcommand= self.scroll_bar.set)
+        self.T1 = Text(self.topFrame2, height = 5, width = 26, yscrollcommand= self.scroll_bar.set)
         Button(self.topFrame1, text = "Browser", width = 10, command = self.browser).pack(side = LEFT)
         self.scroll_bar.pack( side = LEFT, padx = 5)
         self.scroll_bar.config(command=self.T1.yview)
@@ -598,6 +605,7 @@ class PicGUI(object):
         self.master = Toplevel(master)
         self.master.geometry("400x300")
         self.data = receive1()
+        #print(len(self.data))
         self.img = Image.open(BytesIO(self.data))
         img1=self.img.resize((350, 230), Image.ANTIALIAS)
         self.img2 = ImageTk.PhotoImage(img1)
@@ -636,6 +644,7 @@ class PicGUI(object):
         sclient.sendall(bytes("TAKE", "utf8"))
         #print("TAKE")
         self.data = receive1()
+        #print(len(self.data))
         #print(1)
         self.img = Image.open(BytesIO(self.data))
         img1=self.img.resize((350, 230), Image.ANTIALIAS)
@@ -683,7 +692,7 @@ class ClientGUI(object):
             return 
         sclient.sendall(bytes("PROCESS", "utf8"))
         PRG = ProcessGUI(self.master)
-        self.master.wait_window(PRG.master)
+        #self.master.wait_window(PRG.master)
 
     #App Running Button
     def AppRunning(self):
@@ -694,7 +703,7 @@ class ClientGUI(object):
             return 
         sclient.sendall(bytes("APPLICATION", "utf8"))
         AG = AppGUI(self.master)
-        self.master.wait_window(AG.master)
+        #self.master.wait_window(AG.master)
 
     #Keystroke Button
     def Keystroke(self):
@@ -715,7 +724,7 @@ class ClientGUI(object):
             return 
         sclient.sendall(bytes("REGISTRY", "utf8"))
         RG = RegistryGUI(self.master)
-        self.master.wait_window(RG.master)
+        #self.master.wait_window(RG.master)
         
 
     #PrintScreen Button
@@ -727,7 +736,7 @@ class ClientGUI(object):
             return
         sclient.sendall(bytes("TAKEPIC", "utf8"))
         PG = PicGUI(self.master)
-        self.master.wait_window(PG.master)
+        #self.master.wait_window(PG.master)
 
     #Shut Down Button
     def ShutDown(self):

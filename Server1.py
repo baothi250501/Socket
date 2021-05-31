@@ -9,16 +9,22 @@ import pyautogui
 BUFF_SIZE = 4096 
 
 def sendData(sock, msg):
-    sock.sendall(bytes(msg, "utf8"))
+    try:
+        sock.sendall(bytes(msg, "utf8"))
+    except socket.error:
+        return
 
 def recvall(sock):
     data = b''
     while True:
         while True:
-            part = sock.recv(BUFF_SIZE)
-            data += part
-            if len(part) < BUFF_SIZE:
-                break
+            try:
+                part = sock.recv(BUFF_SIZE)
+                data += part
+                if len(part) < BUFF_SIZE:
+                    break
+            except socket.error:
+                return 
         if data:
             break
     return data.decode().strip()
